@@ -70,6 +70,35 @@ export const Job = sequelize.define(
       type: DataTypes.TEXT,
       allowNull: true,
     },
+    location:{
+      type: DataTypes.STRING(150),
+      allowNull: true,
+    },
+    jobType:{
+      type: DataTypes.ENUM('Full-time', 'Part-time', 'Contract'),
+      allowNull: true,
+    },
+    salaryRange:{
+      type: DataTypes.STRING(150),
+      allowNull: true,
+    },
+    requirements:{
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    postedDate:{
+      type: DataTypes.DATEONLY,
+      allowNull: false,
+    },
+    applicationDeadline:{
+      type: DataTypes.DATEONLY,
+      allowNull: false,
+    },
+    isActive:{
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true,
+    },
   },
   {
     tableName: 'jobs',
@@ -114,10 +143,10 @@ JobApplication.belongsTo(User, { foreignKey: { name: 'userId', allowNull: false 
 Job.hasMany(JobApplication, { foreignKey: { name: 'jobId', allowNull: false }, onDelete: 'CASCADE' });
 JobApplication.belongsTo(Job, { foreignKey: { name: 'jobId', allowNull: false } });
 
-export async function syncSchema(force = false) {
+export async function syncSchema() {
   try {
-    await sequelize.sync({ force });
-    console.log(`✅ Database synced successfully. (force: ${force})`);
+    await sequelize.sync();
+    console.log(`✅ Database synced successfully`);
   } catch (error) {
     console.error('❌ Error syncing database:', error);
   }
