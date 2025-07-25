@@ -176,22 +176,59 @@ export async function getApplication(req, res) {
 
 export async function createApplication(req, res) {
   try {
+    // 1. Check if user is authenticated
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
     const { jobId, status, dateApplied, notes } = req.body;
 
+    // 2. Verify the job exists
     const job = await Job.findByPk(jobId);
-    if (!job) return res.status(400).json({ message: 'Job not found' });
+    if (!job) {
+      return res.status(400).json({ message: 'Job not found' });
+    }
 
+    // 3. Verify the user exists
+    const user = await User.findByPk(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // 4. Create the application
     const application = await JobApplication.create({
       jobId,
       status: status || 'Applied',
-      dateApplied,
-      notes,
+      dateApplied: dateApplied || new Date(),
+      notes: notes || '',
       userId: req.user.id,
     });
 
-    res.status(201).json(application);
+    // 5. Return the created application with related data
+    const result = await JobApplication.findByPk(application.id, {
+      include: [
+        { model: Job },
+        { model: User, attributes: ['id', 'name', 'email'] }
+      ]
+    });
+
+    res.status(201).json(result);
   } catch (err) {
-    res.status(500).json({ message: 'Error submitting application', error: err.message });
+    console.error('Error creating application:', err);
+    
+    // More specific error handling
+    if (err.name === 'SequelizeForeignKeyConstraintError') {
+      return res.status(400).json({ 
+        message: 'Invalid reference',
+        error: 'The provided job or user does not exist',
+        details: err.fields
+      });
+    }
+    
+    res.status(500).json({ 
+      message: 'Error submitting application', 
+      error: err.message 
+    });
   }
 }
 
